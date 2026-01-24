@@ -87,13 +87,13 @@ async function handleAccept() {
     //record terms of service consent
     await api.recordConsent({
       consent_type: 'terms_of_service',
-      consent_version: '1.0'
+      consent_version: '2.0'
     })
 
     //record privacy policy consent
     await api.recordConsent({
       consent_type: 'privacy_policy',
-      consent_version: '1.0'
+      consent_version: '2.0'
     })
 
     //mark consent as given in auth store
