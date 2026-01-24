@@ -123,12 +123,13 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.getUserConsents()
       consents.value = response.data || []
 
-      //check if active
+      //check if active AND has correct version
+      const REQUIRED_VERSION = '2.0'
       const hasTerms = consents.value.some(c =>
-        c.consent_type === 'terms_of_service' && c.is_active
+        c.consent_type === 'terms_of_service' && c.is_active && c.consent_version === REQUIRED_VERSION
       )
       const hasPrivacy = consents.value.some(c =>
-        c.consent_type === 'privacy_policy' && c.is_active
+        c.consent_type === 'privacy_policy' && c.is_active && c.consent_version === REQUIRED_VERSION
       )
 
       consentGiven.value = hasTerms && hasPrivacy
