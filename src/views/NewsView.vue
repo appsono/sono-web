@@ -233,7 +233,9 @@ async function loadGitHubReleases() {
 async function loadGitHubCommits() {
   try {
     const response = await axios.get('https://api.github.com/repos/mathiiiiiis/SonoAccounts/commits')
-    commits.value = Array.isArray(response.data) ? response.data : []
+    const excludedSHAs = ['ca37cd8', 'ffc23d2']
+    const data = Array.isArray(response.data) ? response.data : []
+    commits.value = data.filter(c => !excludedSHAs.some(sha => c.sha.startsWith(sha)))
   } catch (err) {
     console.error('Failed to load GitHub commits:', err)
     commits.value = []
