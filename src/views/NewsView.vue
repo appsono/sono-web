@@ -172,6 +172,7 @@ function formatDate(date) {
 
   const now = new Date()
   const diff = now - date
+  if (diff < 0) return 'Just now'
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
 
   if (days === 0) {
