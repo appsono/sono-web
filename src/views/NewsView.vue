@@ -142,7 +142,12 @@ const allNews = computed(() => {
 
   return items
     .filter(item => item.date && !isNaN(item.date.getTime()))
-    .sort((a, b) => b.date - a.date)
+    .sort((a, b) => {
+      const timeDiff = b.date - a.date
+      if (timeDiff !== 0) return timeDiff
+      const priority = { announcement: 0, release: 1, commit: 2 }
+      return (priority[a.type] ?? 3) - (priority[b.type] ?? 3)
+    })
 })
 
 function formatMarkdown(text) {
