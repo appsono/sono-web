@@ -304,6 +304,30 @@ export const uploadAudioCoverArt = (fileId, file) => {
 
 export const deleteAudioFile = (fileId) => api.delete(`/audio/${fileId}`)
 
+export const downloadAudioFile = async (fileId, filename) => {
+  const response = await api.get(`/audio/${fileId}/download`, { responseType: 'blob' })
+  triggerBlobDownload(response.data, filename)
+}
+
+export const downloadCollection = async (collectionId, filename) => {
+  const response = await api.get(`/collections/${collectionId}/download`, {
+    responseType: 'blob',
+    timeout: 300000
+  })
+  triggerBlobDownload(response.data, filename)
+}
+
+function triggerBlobDownload(blob, filename) {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
 // ======== COLLECTIONS ========
 export const createCollection = (collectionData) => {
   return api.post('/collections/', collectionData)

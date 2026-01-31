@@ -45,7 +45,14 @@
           :class="['notification', `notification-${notification.type}`]"
           @click="uiStore.removeNotification(notification.id)"
         >
-          {{ notification.message }}
+          <div class="notification-icon">
+            <svg v-if="notification.type === 'success'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg v-else-if="notification.type === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg v-else-if="notification.type === 'warning'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+          <span class="notification-message">{{ notification.message }}</span>
+          <div v-if="notification.duration > 0" class="notification-progress" :style="{ animationDuration: notification.duration + 'ms' }"></div>
         </div>
       </TransitionGroup>
     </div>
@@ -159,43 +166,94 @@ function handleConfirmModalCancel() {
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 400px;
+  gap: 10px;
+  max-width: 380px;
 }
 
 .notification {
-  padding: 16px 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   border-radius: var(--border-radius);
-  background: var(--bg-container);
+  background: rgba(30, 30, 30, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light-10);
   box-shadow: var(--shadow-xl);
   cursor: pointer;
-  border-left: 4px solid;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.notification-success {
-  border-left-color: var(--success-border);
-  background: var(--success-bg);
-  color: var(--success-text);
+.notification:hover {
+  background: rgba(40, 40, 40, 0.9);
+  border-color: var(--border-light-20);
 }
 
-.notification-error {
-  border-left-color: var(--error-border);
-  background: var(--error-bg);
-  color: var(--error-text);
+.notification-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
 }
 
-.notification-warning {
-  border-left-color: var(--warning-border);
-  background: var(--warning-bg);
-  color: var(--warning-text);
+.notification-message {
+  flex: 1;
+  min-width: 0;
 }
 
-.notification-info {
-  border-left-color: var(--info-border);
-  background: var(--info-bg);
-  color: var(--info-text);
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  animation: notificationTimer linear forwards;
+}
+
+@keyframes notificationTimer {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.notification-success .notification-icon {
+  background: rgba(40, 167, 69, 0.15);
+  color: #98ea83;
+}
+.notification-success .notification-progress {
+  background: #98ea83;
+}
+
+.notification-error .notification-icon {
+  background: rgba(220, 53, 69, 0.15);
+  color: #cc5f5f;
+}
+.notification-error .notification-progress {
+  background: #cc5f5f;
+}
+
+.notification-warning .notification-icon {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffd454;
+}
+.notification-warning .notification-progress {
+  background: #ffd454;
+}
+
+.notification-info .notification-icon {
+  background: rgba(13, 110, 253, 0.15);
+  color: #7db8f5;
+}
+.notification-info .notification-progress {
+  background: #7db8f5;
 }
 
 .notification-enter-active,
@@ -205,12 +263,12 @@ function handleConfirmModalCancel() {
 
 .notification-enter-from {
   opacity: 0;
-  transform: translateX(100%);
+  transform: translateY(12px) scale(0.95);
 }
 
 .notification-leave-to {
   opacity: 0;
-  transform: translateX(100%) scale(0.8);
+  transform: translateX(100%) scale(0.9);
 }
 
 @media (max-width: 768px) {

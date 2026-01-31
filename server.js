@@ -30,7 +30,7 @@ app.use((req, res, next) => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' https://*.sono.wtf https://sono.wtf http://*.sono.wtf http://sono.wtf https://raw.githubusercontent.com https://avatars.githubusercontent.com https://user-images.githubusercontent.com https://github.com https://github-production-user-asset-6210df.s3.amazonaws.com data: blob:; " +
-    "media-src 'self' https://*.sono.wtf https://sono.wtf http://*.sono.wtf http://sono.wtf https://github.com blob:; " +
+    "media-src 'self' https://*.sono.wtf https://sono.wtf http://*.sono.wtf http://sono.wtf https://github.com http://localhost:9000 blob:; " +
     "connect-src 'self' https://lrclib.net https://api.github.com https://*.sono.wtf https://sono.wtf; " + 
     "frame-src https://*.sono.wtf https://sono.wtf;"
   );

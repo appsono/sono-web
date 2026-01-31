@@ -46,15 +46,11 @@
                   <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"/>
                 </svg>
               </button>
-              <button v-if="canEdit" class="btn-icon" @click="editCollection" title="Edit">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-              <button v-if="isOwner" class="btn-icon btn-icon-danger" @click="deleteCollection" title="Delete">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <button class="btn-icon" @click="showCollectionMenu = true" title="More options">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="12" cy="19" r="2"/>
                 </svg>
               </button>
             </div>
@@ -123,6 +119,7 @@
               @edit="editTrack(track.audio_file)"
               @delete="deleteTrack(track)"
               @reorder="handleReorder"
+              @open-menu="openTrackMenu"
             />
           </div>
 
@@ -143,6 +140,20 @@
         </div>
       </div>
     </div>
+
+    <BottomSheetModal
+      :show="showCollectionMenu"
+      :title="collection?.title"
+      :options="collectionMenuOptions"
+      @close="showCollectionMenu = false"
+    />
+
+    <BottomSheetModal
+      :show="!!activeTrackMenu"
+      :title="activeTrackMenu?.track?.title || activeTrackMenu?.track?.original_filename"
+      :options="getTrackMenuOptions(activeTrackMenu)"
+      @close="activeTrackMenu = null"
+    />
 
     <input
       ref="fileInput"
@@ -208,6 +219,7 @@ import { useUIStore } from '@/stores/ui'
 import { useDataStore } from '@/stores/data'
 import * as api from '@/services/api'
 import TrackRow from '@/components/common/TrackRow.vue'
+import BottomSheetModal from '@/components/modals/BottomSheetModal.vue'
 import { getErrorMessage } from '@/utils/errorHandling'
 import defaultAlbumCoverSvg from '@/assets/images/defaults/default_album_cover.svg'
 
@@ -234,6 +246,10 @@ const newCollaboratorId = ref(null)
 const newCollaboratorPermission = ref('edit')
 const addingCollaborator = ref(false)
 const collaboratorError = ref(null)
+
+const showCollectionMenu = ref(false)
+const activeTrackMenu = ref(null)
+const downloading = ref(false)
 
 const isOwner = computed(() => {
   return collection.value?.owner_id === authStore.user?.id
@@ -491,6 +507,110 @@ function deleteCollection() {
       }
     }
   })
+}
+
+const collectionMenuOptions = computed(() => {
+  const opts = [
+    {
+      label: downloading.value ? 'Downloading...' : 'Download Collection',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      action: handleDownloadCollection,
+      disabled: downloading.value || tracks.value.length === 0
+    }
+  ]
+  if (canEdit.value) {
+    opts.push({
+      label: 'Edit Collection',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      action: editCollection
+    })
+  }
+  if (isOwner.value) {
+    opts.push({
+      label: 'Delete Collection',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      action: deleteCollection,
+      danger: true
+    })
+  }
+  return opts
+})
+
+function getTrackMenuOptions(menuData) {
+  if (!menuData) return []
+  const track = menuData.track
+  const opts = [
+    {
+      label: 'Download',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      action: () => handleDownloadTrack(track)
+    }
+  ]
+  if (canEdit.value) {
+    opts.push({
+      label: 'Edit',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      action: () => editTrack(track)
+    })
+  }
+  if (canEdit.value) {
+    opts.push({
+      label: 'Remove from Collection',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      action: () => {
+        const collectionTrack = tracks.value.find(t => t.audio_file?.id === track.id)
+        if (collectionTrack) deleteTrack(collectionTrack)
+      },
+      danger: true
+    })
+  }
+  if (!canEdit.value) {
+    opts.push({
+      label: 'Add to Collection',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+      action: () => {
+      }
+    })
+  }
+  return opts
+}
+
+async function handleDownloadCollection() {
+  if (downloading.value) return
+  downloading.value = true
+  const preparingId = uiStore.showNotification(`Preparing "${collection.value.title}" for download...`, 'info', 0)
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const filename = `${collection.value.title}_${today}.zip`
+    await api.downloadCollection(collection.value.id, filename)
+    uiStore.removeNotification(preparingId)
+    uiStore.showNotification('Download started', 'success')
+  } catch (err) {
+    console.error('Failed to download collection:', err)
+    uiStore.removeNotification(preparingId)
+    uiStore.showNotification('Failed to download collection', 'error')
+  } finally {
+    downloading.value = false
+  }
+}
+
+async function handleDownloadTrack(audioFile) {
+  const trackTitle = audioFile.title || 'track'
+  const preparingId = uiStore.showNotification(`Downloading "${trackTitle}"...`, 'info', 0)
+  try {
+    const filename = audioFile.original_filename || `${trackTitle}.mp3`
+    await api.downloadAudioFile(audioFile.id, filename)
+    uiStore.removeNotification(preparingId)
+    uiStore.showNotification('Download started', 'success')
+  } catch (err) {
+    console.error('Failed to download track:', err)
+    uiStore.removeNotification(preparingId)
+    uiStore.showNotification('Failed to download track', 'error')
+  }
+}
+
+function openTrackMenu(menuData) {
+  activeTrackMenu.value = menuData
 }
 
 function formatType(type) {

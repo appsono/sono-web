@@ -50,34 +50,14 @@
 
     <div class="track-actions">
       <button
-        v-if="canEdit"
-        class="track-action-btn track-edit-btn"
-        @click.stop="$emit('edit')"
-        title="Edit track"
+        class="track-action-btn track-more-btn"
+        @click.stop="$emit('open-menu', { track, trackId, index })"
+        title="More options"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-      <button
-        v-if="canDelete"
-        class="track-action-btn track-delete-btn"
-        @click.stop="$emit('delete')"
-        title="Remove from collection"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-      </button>
-      <button
-        v-if="!canDelete && !canEdit"
-        class="track-action-btn"
-        @click.stop="$emit('add-to-collection')"
-        title="Add to collection"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="2"/>
+          <circle cx="12" cy="12" r="2"/>
+          <circle cx="12" cy="19" r="2"/>
         </svg>
       </button>
     </div>
@@ -118,7 +98,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['play', 'add-to-collection', 'delete', 'edit', 'reorder'])
+const emit = defineEmits(['play', 'add-to-collection', 'delete', 'edit', 'reorder', 'open-menu', 'download'])
 
 const isDragging = ref(false)
 const isDragOver = ref(false)
@@ -471,14 +451,13 @@ const artistName = computed(() => {
   color: var(--text-light);
 }
 
-.track-edit-btn:hover {
-  background: var(--bg-surface-hover);
-  color: var(--primary-color);
+.track-more-btn {
+  color: var(--text-tertiary);
 }
 
-.track-delete-btn:hover {
-  background: var(--error-bg);
-  color: var(--error-text);
+.track-more-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-light);
 }
 
 @media (max-width: 768px) {

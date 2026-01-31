@@ -30,6 +30,9 @@ export const useUIStore = defineStore('ui', () => {
 
   //notification management
   function showNotification(message, type = 'info', duration = 5000) {
+    const duplicate = notifications.value.find(n => n.message === message && n.type === type)
+    if (duplicate) return duplicate.id
+
     const id = notificationId++
     const notification = {
       id,
