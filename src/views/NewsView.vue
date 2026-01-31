@@ -94,8 +94,9 @@ const allNews = computed(() => {
 
       let parsedDate
       if (typeof dateStr === 'string') {
-        if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.match(/[+-]\d{2}:\d{2}$/)) {
-          parsedDate = new Date(dateStr + 'Z')
+        if (!dateStr.endsWith('Z') && !dateStr.match(/[+-]\d{2}:\d{2}$/)) {
+          const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T')
+          parsedDate = new Date(normalized + 'Z')
         } else {
           parsedDate = new Date(dateStr)
         }
