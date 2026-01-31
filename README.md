@@ -1,4 +1,4 @@
-# SONO WEB
+# Sono Web
 
 This repository contains the code for the Sono Web Version, built with Vue. It can be deployed easily using Docker.
 
