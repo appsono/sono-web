@@ -4,3 +4,6 @@ This repository contains the code for the Sono Web Version, built with Vue. It c
 
 ## Contributing
 If you want to contribute, fork the repository and open a pull request with your changes.
+
+## LICENSE
+This project is licensed under the GNU General Public License v3.0.
