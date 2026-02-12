@@ -82,6 +82,44 @@
         </svg>
         <span>{{ deletionProcessResult.message }}</span>
       </div>
+
+      <div class="action-card maintenance-card">
+        <div class="action-icon" :class="{ 'maintenance-active': maintenanceStatus.enabled }">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <div class="action-content">
+          <h3>Maintenance Mode</h3>
+          <p v-if="maintenanceStatus.enabled" class="maintenance-status-text enabled">
+            Maintenance mode is <strong>ENABLED</strong>
+          </p>
+          <p v-else class="maintenance-status-text">
+            Service is running normally
+          </p>
+          <div v-if="!maintenanceStatus.enabled" class="maintenance-input">
+            <label for="maintenance-message">Custom message (optional):</label>
+            <input
+              id="maintenance-message"
+              v-model="maintenanceMessage"
+              type="text"
+              placeholder="e.g., Scheduled maintenance - back at 3pm"
+              maxlength="200"
+              class="form-input"
+            />
+          </div>
+          <div v-else class="maintenance-current-message">
+            <strong>Current message:</strong> {{ maintenanceStatus.message }}
+          </div>
+        </div>
+        <button
+          @click="toggleMaintenance"
+          :class="['btn', maintenanceStatus.enabled ? 'btn-success' : 'btn-danger']"
+          :disabled="loadingMaintenance"
+        >
+          {{ loadingMaintenance ? 'Loading...' : (maintenanceStatus.enabled ? 'Disable Maintenance' : 'Enable Maintenance') }}
+        </button>
+      </div>
     </div>
 
     <div class="admin-tabs">
@@ -126,6 +164,7 @@
             <option value="admin">Admins</option>
           </select>
           <select v-model="userSort" class="filter-select">
+            <option value="id">ID (Low to High)</option>
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
             <option value="username">Username A-Z</option>
@@ -437,8 +476,8 @@
           </div>
           <div class="announcement-content markdown-content" v-html="renderMarkdown(announcement.content)"></div>
           <div class="announcement-meta">
-            Created: {{ formatDate(announcement.created_at) }}
-            <span v-if="announcement.updated_at"> • Updated: {{ formatDate(announcement.updated_at) }}</span>
+            Created: {{ formatDate(announcement.created_date) }}
+            <span v-if="announcement.updated_date"> • Updated: {{ formatDate(announcement.updated_date) }}</span>
           </div>
           <div class="announcement-actions">
             <button @click="startEditAnnouncement(announcement)" class="btn btn-secondary btn-sm">
@@ -755,10 +794,15 @@ const announcementForm = ref({
   is_published: true
 })
 
+//maintenance mode state
+const maintenanceStatus = ref({ enabled: false, message: '' })
+const loadingMaintenance = ref(false)
+const maintenanceMessage = ref('')
+
 //search, filter & sort state
 const userSearch = ref('')
 const userFilter = ref('all')
-const userSort = ref('newest')
+const userSort = ref('id')
 
 const collectionSearch = ref('')
 const collectionFilter = ref('all')
@@ -799,6 +843,9 @@ const filteredUsers = computed(() => {
 
   //apply sorting
   switch (userSort.value) {
+    case 'id':
+      result.sort((a, b) => (a.id || 0) - (b.id || 0))
+      break
     case 'newest':
       result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
       break
@@ -904,6 +951,7 @@ const tabs = [
 onMounted(async () => {
   await loadSystemStats()
   await loadUsers()
+  await loadMaintenanceStatus()
 })
 
 watch(activeTab, async (newTab) => {
@@ -975,6 +1023,40 @@ async function processPendingDeletions() {
     setTimeout(() => {
       deletionProcessResult.value = null
     }, 5000)
+  }
+}
+
+async function loadMaintenanceStatus() {
+  try {
+    const response = await api.getMaintenanceStatus()
+    maintenanceStatus.value = response.data
+    maintenanceMessage.value = response.data.message || ''
+  } catch (err) {
+    console.error('Failed to load maintenance status:', err)
+  }
+}
+
+async function toggleMaintenance() {
+  loadingMaintenance.value = true
+  try {
+    const newEnabled = !maintenanceStatus.value.enabled
+    const message = newEnabled ? (maintenanceMessage.value || 'Service temporarily unavailable for maintenance') : ''
+
+    const response = await api.toggleMaintenanceMode(newEnabled, message)
+    maintenanceStatus.value = response.data
+
+    uiStore.showNotification(
+      newEnabled ? 'Maintenance mode enabled' : 'Maintenance mode disabled',
+      'success'
+    )
+  } catch (err) {
+    console.error('Failed to toggle maintenance mode:', err)
+    uiStore.showNotification(
+      err.response?.data?.detail || 'Failed to toggle maintenance mode',
+      'error'
+    )
+  } finally {
+    loadingMaintenance.value = false
   }
 }
 
@@ -1645,6 +1727,120 @@ function escapeRegex(string) {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: rgb(239, 68, 68);
+}
+
+.maintenance-card {
+  margin-top: 16px;
+}
+
+.action-icon.maintenance-active {
+  background: rgba(239, 68, 68, 0.2);
+  color: rgb(239, 68, 68);
+}
+
+.maintenance-status-text {
+  font-size: 14px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: rgb(16, 185, 129);
+}
+
+.maintenance-status-text.enabled {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: rgb(239, 68, 68);
+}
+
+.maintenance-input {
+  margin-top: 12px;
+}
+
+.maintenance-input label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.maintenance-input .form-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light-10);
+  border-radius: var(--border-radius);
+  color: var(--text-light);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.maintenance-input .form-input:focus {
+  outline: none;
+  border-color: var(--brand-pink);
+}
+
+.maintenance-current-message {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-radius: var(--border-radius);
+}
+
+.maintenance-current-message strong {
+  color: var(--text-light);
+}
+
+.btn-danger {
+  background: rgb(239, 68, 68);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgb(220, 38, 38);
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: rgb(16, 185, 129);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: rgb(5, 150, 105);
+  transform: translateY(-1px);
+}
+
+.btn-success:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .admin-tabs {

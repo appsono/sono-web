@@ -464,6 +464,26 @@ export const deleteAnnouncement = (announcementId) => {
   return api.delete(`/admin/announcements/${announcementId}`)
 }
 
+// ======== ADMIN - MAINTENANCE MODE ========
+export const getMaintenanceStatus = () => {
+  return api.get('/admin/maintenance/status')
+}
+
+export const enableMaintenanceMode = (message) => {
+  const url = message
+    ? `/admin/maintenance/enable?message=${encodeURIComponent(message)}`
+    : '/admin/maintenance/enable'
+  return api.post(url)
+}
+
+export const disableMaintenanceMode = () => {
+  return api.post('/admin/maintenance/disable')
+}
+
+export const toggleMaintenanceMode = (enabled, message) => {
+  return api.post('/admin/maintenance/toggle', { enabled, message })
+}
+
 // ======== ANNOUNCEMENTS (PUBLIC) ========
 export const getPublishedAnnouncements = (skip = 0, limit = 20) => {
   return api.get(`/announcements?skip=${skip}&limit=${limit}`)
