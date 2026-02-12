@@ -165,6 +165,7 @@
           </select>
           <select v-model="userSort" class="filter-select">
             <option value="id">ID (Low to High)</option>
+            <option value="id-desc">ID (High to Low)</option>
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
             <option value="username">Username A-Z</option>
@@ -802,7 +803,7 @@ const maintenanceMessage = ref('')
 //search, filter & sort state
 const userSearch = ref('')
 const userFilter = ref('all')
-const userSort = ref('id')
+const userSort = ref('id-desc')
 
 const collectionSearch = ref('')
 const collectionFilter = ref('all')
@@ -845,6 +846,9 @@ const filteredUsers = computed(() => {
   switch (userSort.value) {
     case 'id':
       result.sort((a, b) => (a.id || 0) - (b.id || 0))
+      break
+    case 'id-desc':
+      result.sort((a, b) => (b.id || 0) - (a.id || 0))
       break
     case 'newest':
       result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))

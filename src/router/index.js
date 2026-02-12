@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import * as api from '@/services/api'
 
 const routes = [
   {
@@ -81,6 +82,12 @@ const routes = [
     meta: { requiresAuth: true, title: 'Credits' }
   },
   {
+    path: '/maintenance',
+    name: 'Maintenance',
+    component: () => import('@/views/MaintenanceView.vue'),
+    meta: { title: 'Under Maintenance' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     redirect: '/'
@@ -95,13 +102,71 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  if (!authStore.user && localStorage.getItem('access_token')) {
+  //check maintenance mode FIRST => skip for maintenance page
+  let maintenanceEnabled = false
+  if (to.name !== 'Maintenance') {
+    try {
+      const response = await api.getMaintenanceStatus()
+      maintenanceEnabled = response.data.enabled
+
+      if (maintenanceEnabled) {
+        //maintenance is enabled
+        //try to init auth if user is already loaded or need to check admin status
+        if (authStore.user && authStore.isSuperuser) {
+          //admin is already logged in => let through
+        } else if (!authStore.user && localStorage.getItem('access_token')) {
+          //try init auth to see if admin
+          //API will allow admin tokens through
+          try {
+            await authStore.initializeAuth()
+            //successfully initialized => check if admin
+            if (!authStore.isSuperuser) {
+              next({ name: 'Maintenance' })
+              return
+            }
+          } catch (err) {
+            //auth failed (likely 503 for non-admin) => show maintenance
+            next({ name: 'Maintenance' })
+            return
+          }
+        } else {
+          //no user and no token => or user is not admin
+          next({ name: 'Maintenance' })
+          return
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check maintenance status:', err)
+    }
+  }
+
+  //if on maintenance page but maintenance is disabled => redirect appropriately
+  if (to.name === 'Maintenance') {
+    try {
+      const response = await api.getMaintenanceStatus()
+      if (!response.data.enabled) {
+        const hasToken = !!localStorage.getItem('access_token')
+        if (hasToken && authStore.isAuthenticated) {
+          next({ name: 'Library' })
+        } else {
+          next({ name: 'Login' })
+        }
+        return
+      }
+    } catch (err) {
+      console.error('Failed to check maintenance status:', err)
+    }
+  }
+
+  //initialize auth for normal operation (not during maintenance)
+  if (!maintenanceEnabled && !authStore.user && localStorage.getItem('access_token')) {
     try {
       await authStore.initializeAuth()
     } catch (err) {
       console.error('Auth initialization failed:', err)
     }
   }
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
     return
