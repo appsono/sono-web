@@ -259,7 +259,7 @@
     <div v-if="confirmDelete" class="modal-overlay" @click.self="confirmDelete = false">
       <div class="modal delete-modal">
         <div class="modal-header">
-          <h2>⚠️ Request Account Deletion</h2>
+          <h2>Request Account Deletion</h2>
         </div>
         <div class="modal-body">
 
@@ -313,7 +313,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import * as api from '@/services/api'
@@ -321,6 +321,7 @@ import { getErrorMessage } from '@/utils/errorHandling'
 import ImageCropperModal from '@/components/modals/ImageCropperModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 
@@ -355,6 +356,11 @@ onMounted(async () => {
   if (authStore.user) {
     profileForm.value.display_name = authStore.user.display_name || ''
     profileForm.value.bio = authStore.user.bio || ''
+  }
+
+  if (route.query.openDelete === 'true') {
+    confirmDelete.value = true
+    router.replace({ name: 'Profile' })
   }
 
   try {

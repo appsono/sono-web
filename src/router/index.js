@@ -88,6 +88,10 @@ const routes = [
     meta: { title: 'Under Maintenance' }
   },
   {
+    path: '/delete-account',
+    redirect: { name: 'Profile', query: { openDelete: 'true' } }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     redirect: '/'
